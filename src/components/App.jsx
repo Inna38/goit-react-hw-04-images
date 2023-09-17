@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import axios from 'axios';
 import Notiflix from 'notiflix';
@@ -22,52 +22,44 @@ export const App = () => {
   const [totalHits, setTotalHits] = useState(null);
   const [total, setTotal] = useState(null);
 
-  const fetchData = async ({ search = searchElement, page = 1 }) => {
-    setPage(prev => prev + 1);
-    
-    try {
-      const { data } = await axios.get(
-        `${BASE_URL}?key=${KEY_API}&q=${search}&image_type=photo&per_page=12&page=${page}`
-      );
+  useEffect(() => {
+    if (searchElement) {
+      try {
+        (async () => {
+          const { data } = await axios.get(
+            `${BASE_URL}?key=${KEY_API}&q=${searchElement}&image_type=photo&per_page=12&page=${page}`
+          );
 
-      if (data.hits.length === 0) {
-        setIsLoader(false);
+          setItem(prev => [...prev, ...data.hits]);
+          setIsLoader(false);
+          setTotalHits(data.totalHits);
+          setTotal(data.total);
 
-        Notiflix.Notify.info('Not found');
-        return;
+          if (data.hits.length === 0) {
+            setIsLoader(false);
+
+            Notiflix.Notify.info('Not found');
+            return;
+          }
+        })();
+      } catch (error) {
+        console.log(error);
       }
-
-      if (!item) {
-        setItem(data.hits);
-        setIsLoader(false);
-        setTotalHits(data.totalHits);
-        setTotal(data.total);
-      } else {
-        setItem(prev => [...prev, ...data.hits]);
-        setIsLoader(false);
-        setTotalHits(data.totalHits);
-        setTotal(data.total);
-      }
-    } catch (error) {
-      console.log(error);
     }
-  };
+  }, [page, searchElement]);
 
   const loadBtnClick = async () => {
     setIsLoader(true);
-     
-    fetchData({ page });
+    setPage(prev => prev + 1);
   };
 
   const handleSearch = searchElement => {
-    setItem('');
+    setItem([]);
     setSearchElement(searchElement);
     setIsLoader(true);
     setPage(1);
     setTotalHits(null);
     setTotal(null);
-
-    fetchData({ search: searchElement });
   };
 
   const handleModal = largeImageURL => {
